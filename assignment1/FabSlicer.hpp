@@ -4,6 +4,7 @@
 #include "IntervalTree.hpp"
 #include "GCodeConverter.hpp"
 #include <chrono>
+#include <set>
 
 namespace fab_translation {
     template <typename T>
@@ -162,7 +163,27 @@ namespace fab_translation {
         //      - collect all intersection edges and return
         void Slicing_bruteforce(mesh::TriMesh<T>& tri_mesh, 
             std::vector<std::vector<IntersectionEdge<T>>> &intersection_edges) {
-            
+            for (T z = _bottom + _dz; z < _top; z += _dz) {
+                geometry::Plane<T> plane(Vector3<T>(0.f, 0.f, z), Vector3<T>(0.f,0.f,1.f));
+
+                std::vector<IntersectionEdge<T>> i_edges;
+                for (auto elements : tri_mesh.elements()) {
+                    geometry::Triangle<T> triangle(
+                        tri_mesh.vertices(elements[0]),
+                        tri_mesh.vertices(elements[1]),
+                        tri_mesh.vertices(elements[2]));
+                    auto intersection_points = triangle.IntersectPlane(plane);
+
+                    if (intersection_points.size() >= 2) {
+                        i_edges.push_back(IntersectionEdge<T>(intersection_points[0], intersection_points[1]));
+                    }
+                    if (intersection_points.size() == 3) {
+                        i_edges.push_back(IntersectionEdge<T>(intersection_points[0], intersection_points[2]));
+                        i_edges.push_back(IntersectionEdge<T>(intersection_points[1], intersection_points[2]));
+                    }
+                }
+                intersection_edges.push_back(i_edges);
+            }
         }
 
         // TODO: HW1
@@ -195,6 +216,15 @@ namespace fab_translation {
         void CreateContour(mesh::TriMesh<T>& tri_mesh,
             std::vector<std::vector<IntersectionEdge<T>>> &intersection_edges,
             std::vector<std::vector<std::vector<Vector3<T>>>>& contours) {
+            T epsilon = 1e-6;
+            for (auto& layer : intersection_edges) {
+                std::vector<std::vector<Vector3<T>>> layer_contours;
+                std::set<int> visited;
+
+                while (visited.size() < layer.size()) {
+
+                }
+            }
 
         }
 

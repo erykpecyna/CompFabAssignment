@@ -35,6 +35,8 @@ namespace geometry {
         Vector3<T> _normal;
     };
 
+    
+
     template <typename T>
     class Triangle {
     public:
@@ -60,6 +62,30 @@ namespace geometry {
         std::vector<Vector3<T>> IntersectPlane(Plane<T> p) {
             std::vector<Vector3<T>> intersections;
             intersections.clear();
+            bool op0, op1, op2;
+            T d0, d1, d2;
+            if (op0 = p.onPlane(vertices(0), d0)) {
+                intersections.push_back(vertices(0));
+            }
+            if (op1 = p.onPlane(vertices(1), d1)) {
+                intersections.push_back(vertices(1));
+            }
+            if (op2 = p.onPlane(vertices(2), d2)) {
+                intersections.push_back(vertices(2));
+            }
+            if (d0 * d1 < -1e-12 && !op0 && !op1) {
+                T t = d0 / (d0 - d1);
+                intersections.push_back(vertices(0) + t * (vertices(1) - vertices(0)));
+            }
+            if (d0 * d2 < -1e-12 && !op0 && !op2) {
+                T t = d0 / (d0 - d2);
+                intersections.push_back(vertices(0) + t * (vertices(2) - vertices(0)));
+            }
+            if (d2 * d1 < -1e-12 && !op2 && !op1) {
+                T t = d2 / (d2 - d1);
+                intersections.push_back(vertices(2) + t * (vertices(1) - vertices(2)));
+            }
+            
             return intersections;
         }
 
