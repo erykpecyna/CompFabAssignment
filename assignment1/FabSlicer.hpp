@@ -216,14 +216,14 @@ namespace fab_translation {
         void CreateContour(mesh::TriMesh<T>& tri_mesh,
             std::vector<std::vector<IntersectionEdge<T>>> &intersection_edges,
             std::vector<std::vector<std::vector<Vector3<T>>>>& contours) {
-            T epsilon = 1e-6;
+            T epsilon = 1;
             for (auto& layer : intersection_edges) {
                 std::vector<std::vector<Vector3<T>>> layer_contours;
                 std::set<int> visited;
                 int ind = 0;
 
                 while (visited.size() < layer.size()) {
-                    std::cout << visited.size() << " " << layer.size() << " " << ind << std::endl;
+                    // std::cout << visited.size() << " " << layer.size() << " " << ind << std::endl;
                     visited.insert(ind);
                     IntersectionEdge<T>* start_edge = &layer[ind];
                     std::vector<Vector3<T>> coordinates;
@@ -254,10 +254,12 @@ namespace fab_translation {
                             }
                         }
 
+                        // std::cout << nedgeind << std::endl;
                         // Handle nearest neighbor (or lack thereof)
                         if (nedgeind == -1) {
                             // No valid NN found so ignore contour unless completed
                             Vector3<T> diff = coordinates.front() - coordinates.back();
+                            // std::cout << coordinates.front() << std::endl << coordinates.back() << std::endl << std::sqrt(diff.dot(diff)) << std::endl;
                             if (std::sqrt(diff.dot(diff)) < epsilon) {
                                 // contour is complete
                                 coordinates.push_back(coordinates.front());
@@ -279,7 +281,8 @@ namespace fab_translation {
                     } while (true);
 
                     // Find new unvisited edge if one exists
-                    for (ind = 0; visited.find(ind) == visited.end() && ind < layer.size(); ind++);
+                    for (ind = 0; visited.find(ind) != visited.end() && ind < layer.size(); ind++);
+                    // std::cout << "New unvisited edge: " << ind;
                 }
                 // Insert layer contours into contours
                 contours.push_back(layer_contours);
