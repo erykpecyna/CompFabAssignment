@@ -220,9 +220,24 @@ namespace fab_translation {
             for (auto& layer : intersection_edges) {
                 std::vector<std::vector<Vector3<T>>> layer_contours;
                 std::set<int> visited;
+                int ind = 0;
 
                 while (visited.size() < layer.size()) {
-
+                    visited.insert(ind);
+                    IntersectionEdge<T>* start_edge = &layer[ind];
+                    std::vector<Vector3<T>> coordinates;
+                    
+                    coordinates.push_back(start_edge->p0);
+                    coordinates.push_back(start_edge->p1);
+                    
+                    // Start stitching until we reach start_edge again or have no valid neighbors.
+                    do {
+                        int nnind = 0;
+                        Vector3<T>& latest_waypoint = coordinates.back();
+                        for (int i = 0; i < layer.size(); i++) {
+                            if ()
+                        }
+                    } while ();
                 }
             }
 
