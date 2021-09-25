@@ -163,7 +163,7 @@ namespace fab_translation {
         //      - collect all intersection edges and return
         void Slicing_bruteforce(mesh::TriMesh<T>& tri_mesh, 
             std::vector<std::vector<IntersectionEdge<T>>> &intersection_edges) {
-            for (T z = _bottom + _dz; z < _top; z += _dz) {
+            for (T z = _bottom; z <= _top; z += _dz) {
                 geometry::Plane<T> plane(Vector3<T>(0.f, 0.f, z), Vector3<T>(0.f,0.f,1.f));
 
                 std::vector<IntersectionEdge<T>> i_edges;
@@ -174,12 +174,8 @@ namespace fab_translation {
                         tri_mesh.vertices(elements[2]));
                     auto intersection_points = triangle.IntersectPlane(plane);
 
-                    if (intersection_points.size() >= 2) {
+                    if (intersection_points.size() == 2) {
                         i_edges.push_back(IntersectionEdge<T>(intersection_points[0], intersection_points[1]));
-                    }
-                    if (intersection_points.size() == 3) {
-                        i_edges.push_back(IntersectionEdge<T>(intersection_points[0], intersection_points[2]));
-                        i_edges.push_back(IntersectionEdge<T>(intersection_points[1], intersection_points[2]));
                     }
                 }
                 intersection_edges.push_back(i_edges);
@@ -216,7 +212,7 @@ namespace fab_translation {
         void CreateContour(mesh::TriMesh<T>& tri_mesh,
             std::vector<std::vector<IntersectionEdge<T>>> &intersection_edges,
             std::vector<std::vector<std::vector<Vector3<T>>>>& contours) {
-            T epsilon = 1;
+            T epsilon = 1e-6;
             for (auto& layer : intersection_edges) {
                 std::vector<std::vector<Vector3<T>>> layer_contours;
                 std::set<int> visited;
@@ -262,18 +258,23 @@ namespace fab_translation {
                             // std::cout << coordinates.front() << std::endl << coordinates.back() << std::endl << std::sqrt(diff.dot(diff)) << std::endl;
                             if (std::sqrt(diff.dot(diff)) < epsilon) {
                                 // contour is complete
-                                coordinates.push_back(coordinates.front());
+                                // Sometimes first and last waypoint repeated because of intersection overlap.
+                                // Fix that here
+                                if (coordinates.front() == coordinates.back())
+                                    coordinates.erase(coordinates.end() - 1);
                                 layer_contours.push_back(coordinates);
                             }
                             break;
                         }
 
                         if (d0 < d1) {
-                            coordinates.push_back(layer[nedgeind].p0());
+                            if (layer[nedgeind].p0() != coordinates.back())
+                                coordinates.push_back(layer[nedgeind].p0());
                             coordinates.push_back(layer[nedgeind].p1());
                         }
                         else {
-                            coordinates.push_back(layer[nedgeind].p1());
+                            if (layer[nedgeind].p1() != coordinates.back())
+                                coordinates.push_back(layer[nedgeind].p1());
                             coordinates.push_back(layer[nedgeind].p0());
                         }
 

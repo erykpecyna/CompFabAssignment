@@ -73,19 +73,18 @@ namespace geometry {
             if (op2 = p.onPlane(vertices(2), d2)) {
                 intersections.push_back(vertices(2));
             }
-            if (d0 * d1 < -1e-12 && !op0 && !op1) {
+            if (d0 * d1 < 0 && !op0 && !op1) {
                 T t = d0 / (d0 - d1);
                 intersections.push_back(vertices(0) + t * (vertices(1) - vertices(0)));
             }
-            if (d0 * d2 < -1e-12 && !op0 && !op2) {
+            if (d0 * d2 < 0 && !op0 && !op2) {
                 T t = d0 / (d0 - d2);
                 intersections.push_back(vertices(0) + t * (vertices(2) - vertices(0)));
             }
-            if (d2 * d1 < -1e-12 && !op2 && !op1) {
+            if (d2 * d1 < 0 && !op2 && !op1) {
                 T t = d2 / (d2 - d1);
                 intersections.push_back(vertices(2) + t * (vertices(1) - vertices(2)));
             }
-            
             return intersections;
         }
 
