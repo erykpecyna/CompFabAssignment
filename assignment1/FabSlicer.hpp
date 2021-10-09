@@ -225,6 +225,8 @@ namespace fab_translation {
                     std::vector<Vector3<T>> coordinates;
                     
                     coordinates.push_back(start_edge->p0());
+                    // Should technically make sure that p0 and p1 are far away from each other
+                    // but didn't want to make this messier than it already is.
                     coordinates.push_back(start_edge->p1());
                     
                     // Start stitching until we reach start_edge again or have no valid neighbors.
@@ -255,25 +257,32 @@ namespace fab_translation {
                         if (nedgeind == -1) {
                             // No valid NN found so ignore contour unless completed
                             Vector3<T> diff = coordinates.front() - coordinates.back();
-                            // std::cout << coordinates.front() << std::endl << coordinates.back() << std::endl << std::sqrt(diff.dot(diff)) << std::endl;
                             if (std::sqrt(diff.dot(diff)) < epsilon) {
                                 // contour is complete
                                 // Sometimes first and last waypoint repeated because of intersection overlap.
                                 // Fix that here
-                                if (coordinates.front() == coordinates.back())
+                                Vector3<T> bediff = coordinates.front() - coordinates.back();
+                                T dist = std::sqrt(bediff.dot(bediff));
+                                if (dist < epsilon)
                                     coordinates.erase(coordinates.end() - 1);
+                                
                                 layer_contours.push_back(coordinates);
                             }
                             break;
                         }
 
+                        // Make sure the points are not so close as to be considered same point
+                        // to avoid duplicates
+                        Vector3<T> diff0 = coordinates.back() - layer[nedgeind].p0();
+                        Vector3<T> diff1 = coordinates.back() - layer[nedgeind].p1();
+                        T tol0 = std::sqrt(diff0.dot(diff0));
+                        T tol1 = std::sqrt(diff1.dot(diff1));
+                        
                         if (d0 < d1) {
-                            if (layer[nedgeind].p0() != coordinates.back())
-                                coordinates.push_back(layer[nedgeind].p0());
-                            coordinates.push_back(layer[nedgeind].p1());
-                        }
-                        else {
-                            if (layer[nedgeind].p1() != coordinates.back())
+                            if (layer[nedgeind].p0() != coordinates.back() && tol0 > epsilon)
+                                coordinates.push_back(layer[nedgeind].p0()); coordinates.push_back(layer[nedgeind].p1());
+                        } else {
+                            if (layer[nedgeind].p1() != coordinates.back() && tol1 > epsilon)
                                 coordinates.push_back(layer[nedgeind].p1());
                             coordinates.push_back(layer[nedgeind].p0());
                         }
@@ -283,7 +292,6 @@ namespace fab_translation {
 
                     // Find new unvisited edge if one exists
                     for (ind = 0; visited.find(ind) != visited.end() && ind < layer.size(); ind++);
-                    // std::cout << "New unvisited edge: " << ind;
                 }
                 // Insert layer contours into contours
                 contours.push_back(layer_contours);
