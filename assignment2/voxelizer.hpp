@@ -67,8 +67,13 @@ namespace mesh {
 						_voxels[i][j][k] = false;
 
 			// Step 1: Clear _hits.
+			std::vector<std::vector<std::vector<T>>> hits(nx, std::vector<std::vector<T>>(ny, std::vector<T>()));
+			for (auto& col : hits)
+				for (auto& cell : col)
+					cell.clear();
 
 			// Step 2: shoot rays.
+
 
 			// Step 3: fill the _voxels array
 
