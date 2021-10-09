@@ -94,21 +94,18 @@ namespace geometry {
         // Input: a ray, the ray is represented by an origin position and a direction vector
         // Output: return a real number t, the intersection is origin + dir * t, t = -1 means no intersection
         const T IntersectRay(const Vector3<T>& origin, const Vector3<T>& dir) const {
-            const T flag = static_cast<T>(-1.0);    
-            return flag;
-            
             const T epsilon = 1e-6;
             Vector3<T> e1 = _vertices[1] - _vertices[0];
             Vector3<T> e2 = _vertices[2] - _vertices[0];
             Vector3<T> h = dir.cross(e2);
             T a = h.dot(e1);
-            if (a > -epsilon || a < epsilon) return -1; // ray parallel to triangle;
+            if (a > -epsilon && a < epsilon) return -1; // ray parallel to triangle;
 
             T f = 1 / a;
             Vector3<T> s = origin - _vertices[0];
-            T u = f * h.dotproduct(s);
+            T u = f * h.dot(s);
             
-            if (!(u >= 0 && u <= 1)) return -1;
+            if (u < 0 || u > 1) return -1;
 
             Vector3<T> q = s.cross(e1);
             T v = f * dir.dot(q);
@@ -116,7 +113,7 @@ namespace geometry {
 
             // At this point, there is an intersection so find t
             T t = f * e2.dot(q);
-            return t > epsilon ? t : -1;
+            return t;
         }
 
     private:
