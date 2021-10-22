@@ -6,6 +6,12 @@ namespace geometry {
     template <typename T>
     using Vector3 = Eigen::Matrix<T, 3, 1>;
 
+    // Norm of a vector
+    template <typename T>
+    T norm(T a, T b, T c) {
+        return sqrt(pow(a, 2) + pow(b, 2) + pow(c, 2));
+    }
+
     // the plane is represented by (x - _p) /dot _normal = 0
     template <typename T>
     class Plane {
