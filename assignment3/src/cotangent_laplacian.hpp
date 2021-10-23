@@ -6,6 +6,19 @@
 #include <igl/dihedral_angles.h>
 #include <igl/volume.h>
 #include "dihedral_sine.hpp"
+#include <algorithm>
+#include <set>
+
+unsigned set2ind(std::set<unsigned> s) {
+	// This is to match edge indices to their corresponding index in the output of 
+	// edge_lengths or dihedral_angles
+	if (s.find(3) != s.end() && s.find(0) != s.end()) return 0;
+	if (s.find(3) != s.end() && s.find(1) != s.end()) return 0;
+	if (s.find(3) != s.end() && s.find(2) != s.end()) return 0;
+	if (s.find(1) != s.end() && s.find(2) != s.end()) return 0;
+	if (s.find(2) != s.end() && s.find(0) != s.end()) return 0;
+	if (s.find(0) != s.end() && s.find(1) != s.end()) return 0;
+}
 
 // TODO: HW3
 // Assignment 3, Part 3.2.
@@ -30,8 +43,55 @@ void cotangent_laplacian(
 	std::vector<Eigen::Triplet<double> > IJV;
 	IJV.clear();
 
+	// Angle and cos matrix
+	Eigen::MatrixXd angles;
+	angles.resize(F.rows(), 6);
+	Eigen::MatrixXd coses;
+	coses.resize(F.rows(), 6);
+
+	igl::dihedral_angles(V, F, angles, coses);
+
+	// Edge lengths
+	Eigen::MatrixXd edgelengths;
+	edgelengths.resize(F.rows(), 6);
+
+	igl::edge_lengths(V, F, edgelengths);
+
+	// Volumes
+	Eigen::MatrixXd volumes;
+	volumes.resize(F.rows(), 1);
+
+	igl::volume(edgelengths, volumes);
+
 	/* Implement your code here. */
-	
+	for (unsigned tetind = 0; tetind < F.rows(); tetind++) {
+		// Loop over edges
+		for (unsigned i = 0; i < 3; i++)
+			for (unsigned j = i + 1; j < 4; j++) {
+				// i and j are endpoints of edge in tet space
+				// These edges all exist so this is case 1
+				std::vector<unsigned> currinds({ i, j });
+
+				// Find opposite edge
+				std::vector<int> opp;
+				for (unsigned k = 0; k < 4; k++) {
+					if (std::find(currinds.begin(), currinds.end(), k) != currinds.end()) opp.push_back(k);
+				}
+				
+				// Compute this element of the sum and insert
+				std::set<unsigned> e;
+				e.insert(opp[0]);
+				e.insert(opp[1]);
+				unsigned colind = set2ind(e);
+
+				// Compute cotangent
+				double element = (1.f / 6.f) * edgelengths(tetind, colind) * (coses(tetind, colind) / sin(angles(tetind, colind)));
+				Eigen::Triplet<double> trip(i, j, element);
+				Eigen::Triplet<double> trip(i, i, -element);
+				Eigen::Triplet<double> trip(j, j, -element);
+				IJV.push_back(trip);
+			}
+	}
 	// Set From Triplets Sums all Triplets with the same indices
 	L.setFromTriplets(IJV.begin(), IJV.end());
 }
