@@ -13,11 +13,11 @@ unsigned set2ind(std::set<unsigned> s) {
 	// This is to match edge indices to their corresponding index in the output of 
 	// edge_lengths or dihedral_angles
 	if (s.find(3) != s.end() && s.find(0) != s.end()) return 0;
-	if (s.find(3) != s.end() && s.find(1) != s.end()) return 0;
-	if (s.find(3) != s.end() && s.find(2) != s.end()) return 0;
-	if (s.find(1) != s.end() && s.find(2) != s.end()) return 0;
-	if (s.find(2) != s.end() && s.find(0) != s.end()) return 0;
-	if (s.find(0) != s.end() && s.find(1) != s.end()) return 0;
+	if (s.find(3) != s.end() && s.find(1) != s.end()) return 1;
+	if (s.find(3) != s.end() && s.find(2) != s.end()) return 2;
+	if (s.find(1) != s.end() && s.find(2) != s.end()) return 3;
+	if (s.find(2) != s.end() && s.find(0) != s.end()) return 4;
+	if (s.find(0) != s.end() && s.find(1) != s.end()) return 5;
 }
 
 // TODO: HW3
@@ -78,6 +78,7 @@ void cotangent_laplacian(
 					if (std::find(currinds.begin(), currinds.end(), k) != currinds.end()) opp.push_back(k);
 				}
 				
+				assert(opp.size() == 2);
 				// Compute this element of the sum and insert
 				std::set<unsigned> e;
 				e.insert(opp[0]);
@@ -86,10 +87,12 @@ void cotangent_laplacian(
 
 				// Compute cotangent
 				double element = (1.f / 6.f) * edgelengths(tetind, colind) * (coses(tetind, colind) / sin(angles(tetind, colind)));
-				Eigen::Triplet<double> trip(i, j, element);
-				Eigen::Triplet<double> trip(i, i, -element);
-				Eigen::Triplet<double> trip(j, j, -element);
-				IJV.push_back(trip);
+				Eigen::Triplet<double> trip1(i, j, element);
+				Eigen::Triplet<double> trip2(i, i, -element);
+				Eigen::Triplet<double> trip3(j, j, -element);
+				IJV.push_back(trip1);
+				IJV.push_back(trip2);
+				IJV.push_back(trip3);
 			}
 	}
 	// Set From Triplets Sums all Triplets with the same indices
