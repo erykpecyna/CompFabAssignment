@@ -67,10 +67,32 @@ namespace mesh {
 						_voxels[i][j][k] = false;
 
 			// Step 1: Clear _hits.
+			std::vector<std::vector<std::vector<T>>> hits(nx, std::vector<std::vector<T>>(ny, std::vector<T>()));
 
 			// Step 2: shoot rays.
+			for (int i = 0; i < nx; i++)
+				for (int j = 0; j < ny; j++) {
+					const Vector3<T> o = _pmin + Vector3<T>(i + 0.5f, j + 0.5f, 0.0f) * _dx;
+					// Compute hits for this z column
+					// hits[i][j].clear();
+					const Vector3<T> direction(0, 0, 1);
+					for (const auto& verts : _triangles) {
+						geometry::Triangle<T> tri(verts[0], verts[1], verts[2]);
+						T t = tri.IntersectRay(o, direction);
+						if (t >= -1e-6) hits[i][j].push_back(t);
+					}
+					std::sort(hits[i][j].begin(), hits[i][j].end());
+				}
 
 			// Step 3: fill the _voxels array
+			for (int i = 0; i < nx; i++)
+				for (int j = 0; j < ny; j++)
+					for (int k = 0; k < hits[i][j].size(); k += 2) {
+						// Only need to set true values
+						for (int z = std::round(hits[i][j][k] / _dx); z < (int)std::round(hits[i][j][k + 1] / _dx); z++)
+							if (z >= 0 && z < nz)
+								_voxels[i][j][z] = true;
+					}
 
 		}
 
@@ -84,10 +106,42 @@ namespace mesh {
 					for (int k = 0; k < nz; ++k)
 						_voxels[i][j][k] = false;
 
-			// Step 1: Clear _voxels
+			std::vector<std::vector<std::vector<T>>> hits(nx, std::vector<std::vector<T>>(ny, std::vector<T>()));
 
-			// Step 2: fill the _voxels array
+			for (const auto verts : _triangles) {
+				geometry::Triangle<T> tri(verts[0], verts[1], verts[2]);
+				T x0 = std::min(std::min(std::round(verts[0][0]), std::round(verts[1][0])), std::round(verts[2][0]));
+				T x1 = std::max(std::max(std::round(verts[0][0]), std::round(verts[1][0])), std::round(verts[2][0]));
+				T y0 = std::min(std::min(std::round(verts[0][1]), std::round(verts[1][1])), std::round(verts[2][1]));
+				T y1 = std::max(std::max(std::round(verts[0][1]), std::round(verts[1][1])), std::round(verts[2][1]));
+
+				// Compute intersections for bounding box of this triangle
+				// 0.5f addition and subtraction to give leeway and avoid rounding errors
+				for (int i = (x0 - _pmin[0] - 0.5f) / _dx; i <= (int)((x1 - _pmin[0] + 0.5f) / _dx) + 1; i++)
+					for (int j = (y0 - _pmin[1] - 0.5f) / _dx; j <= (int)((y1 - _pmin[1] + 0.5f) / _dx) + 1; j++) {
+						if (i < 0 || i >= nx || j < 0 || j >= ny) continue;
+						const Vector3<T> o = _pmin + Vector3<T>(i + 0.5f, j + 0.5f, 0.0f) * _dx;
+						T t = tri.IntersectRay(o, Vector3<T>::UnitZ());
+						if (t >= -1e-6) hits[i][j].push_back(t);
+					}
+			}
+
+			// Sort hits
+			for (auto& slice : hits)
+				for (auto& column : slice) {
+					std::sort(column.begin(), column.end());
+				}
+
+			for (int i = 0; i < nx; i++)
+				for (int j = 0; j < ny; j++)
+					for (int k = 0; k < hits[i][j].size(); k += 2) {
+						// Only need to set true values
+						for (int z = std::round(hits[i][j][k] / _dx); z < (int)std::round(hits[i][j][k + 1] / _dx); z++)
+							if (z >= 0 && z < nz)
+								_voxels[i][j][z] = true;
+					}
 		}
+	
 
 		// TODO: HW2
 		// part 3.1.

@@ -60,8 +60,6 @@ int main(int argc, char** argv) {
 	else {
 		std::cout << "Slicing accelerated" << std::endl;
 		slice_to_gcode(model_file, gcode_file);
-	}
-
-    return 0;
+	}    return 0;
 }
 

@@ -4,6 +4,7 @@
 #include "IntervalTree.hpp"
 #include "GCodeConverter.hpp"
 #include <chrono>
+#include <set>
 
 namespace fab_translation {
     template <typename T>
@@ -164,7 +165,23 @@ namespace fab_translation {
         //      - collect all intersection edges and return
         void Slicing_bruteforce(mesh::TriMesh<T>& tri_mesh, 
             std::vector<std::vector<IntersectionEdge<T>>> &intersection_edges) {
-            
+            for (T z = _bottom; z <= _top; z += _dz) {
+                geometry::Plane<T> plane(Vector3<T>(0.f, 0.f, z), Vector3<T>(0.f,0.f,1.f));
+
+                std::vector<IntersectionEdge<T>> i_edges;
+                for (auto elements : tri_mesh.elements()) {
+                    geometry::Triangle<T> triangle(
+                        tri_mesh.vertices(elements[0]),
+                        tri_mesh.vertices(elements[1]),
+                        tri_mesh.vertices(elements[2]));
+                    auto intersection_points = triangle.IntersectPlane(plane);
+
+                    if (intersection_points.size() == 2) {
+                        i_edges.push_back(IntersectionEdge<T>(intersection_points[0], intersection_points[1]));
+                    }
+                }
+                intersection_edges.push_back(i_edges);
+            }
         }
 
         // TODO: HW1
@@ -197,6 +214,90 @@ namespace fab_translation {
         void CreateContour(mesh::TriMesh<T>& tri_mesh,
             std::vector<std::vector<IntersectionEdge<T>>> &intersection_edges,
             std::vector<std::vector<std::vector<Vector3<T>>>>& contours) {
+            T epsilon = 1e-6;
+            for (auto& layer : intersection_edges) {
+                std::vector<std::vector<Vector3<T>>> layer_contours;
+                std::set<int> visited;
+                int ind = 0;
+
+                while (visited.size() < layer.size()) {
+                    // std::cout << visited.size() << " " << layer.size() << " " << ind << std::endl;
+                    visited.insert(ind);
+                    IntersectionEdge<T>* start_edge = &layer[ind];
+                    std::vector<Vector3<T>> coordinates;
+                    
+                    coordinates.push_back(start_edge->p0());
+                    // Should technically make sure that p0 and p1 are far away from each other
+                    // but didn't want to make this messier than it already is.
+                    coordinates.push_back(start_edge->p1());
+                    
+                    // Start stitching until we reach start_edge again or have no valid neighbors.
+                    do {
+                        int nedgeind = -1;
+                        T d0 = epsilon, d1 = epsilon; // has to be within epsilon of point
+                        Vector3<T>& latest_waypoint = coordinates.back();
+                        for (int i = 0; i < layer.size(); i++) {
+                            if (visited.find(i) != visited.end()) {
+                                continue;
+                            }
+                            Vector3<T> diff0 = layer[i].p0() - latest_waypoint;
+                            Vector3<T> diff1 = layer[i].p1() - latest_waypoint;
+
+                            T mindist = std::min(d0, d1);
+                            T dist0 = std::sqrt(diff0.dot(diff0));
+                            T dist1 = std::sqrt(diff1.dot(diff1));
+
+                            if (dist0 < mindist || dist1 < mindist) {
+                                nedgeind = i;
+                                d0 = dist0;
+                                d1 = dist1;
+                            }
+                        }
+
+                        // std::cout << nedgeind << std::endl;
+                        // Handle nearest neighbor (or lack thereof)
+                        if (nedgeind == -1) {
+                            // No valid NN found so ignore contour unless completed
+                            Vector3<T> diff = coordinates.front() - coordinates.back();
+                            if (std::sqrt(diff.dot(diff)) < epsilon) {
+                                // contour is complete
+                                // Sometimes first and last waypoint repeated because of intersection overlap.
+                                // Fix that here
+                                Vector3<T> bediff = coordinates.front() - coordinates.back();
+                                T dist = std::sqrt(bediff.dot(bediff));
+                                if (dist < epsilon)
+                                    coordinates.erase(coordinates.end() - 1);
+                                
+                                layer_contours.push_back(coordinates);
+                            }
+                            break;
+                        }
+
+                        // Make sure the points are not so close as to be considered same point
+                        // to avoid duplicates
+                        Vector3<T> diff0 = coordinates.back() - layer[nedgeind].p0();
+                        Vector3<T> diff1 = coordinates.back() - layer[nedgeind].p1();
+                        T tol0 = std::sqrt(diff0.dot(diff0));
+                        T tol1 = std::sqrt(diff1.dot(diff1));
+                        
+                        if (d0 < d1) {
+                            if (layer[nedgeind].p0() != coordinates.back() && tol0 > epsilon)
+                                coordinates.push_back(layer[nedgeind].p0()); coordinates.push_back(layer[nedgeind].p1());
+                        } else {
+                            if (layer[nedgeind].p1() != coordinates.back() && tol1 > epsilon)
+                                coordinates.push_back(layer[nedgeind].p1());
+                            coordinates.push_back(layer[nedgeind].p0());
+                        }
+
+                        visited.insert(nedgeind);
+                    } while (true);
+
+                    // Find new unvisited edge if one exists
+                    for (ind = 0; visited.find(ind) != visited.end() && ind < layer.size(); ind++);
+                }
+                // Insert layer contours into contours
+                contours.push_back(layer_contours);
+            }
 
         }
 
