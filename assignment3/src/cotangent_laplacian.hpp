@@ -75,7 +75,7 @@ void cotangent_laplacian(
 				// Find opposite edge
 				std::vector<int> opp;
 				for (unsigned k = 0; k < 4; k++) {
-					if (std::find(currinds.begin(), currinds.end(), k) != currinds.end()) opp.push_back(k);
+					if (std::find(currinds.begin(), currinds.end(), k) == currinds.end()) opp.push_back(k);
 				}
 				
 				assert(opp.size() == 2);
@@ -87,9 +87,9 @@ void cotangent_laplacian(
 
 				// Compute cotangent
 				double element = (1.f / 6.f) * edgelengths(tetind, colind) * (coses(tetind, colind) / sin(angles(tetind, colind)));
-				Eigen::Triplet<double> trip1(i, j, element);
-				Eigen::Triplet<double> trip2(i, i, -element);
-				Eigen::Triplet<double> trip3(j, j, -element);
+				Eigen::Triplet<double> trip1(F(tetind, i), F(tetind,j), element);
+				Eigen::Triplet<double> trip2(F(tetind, i), F(tetind,i), -element);
+				Eigen::Triplet<double> trip3(F(tetind, j), F(tetind,j), -element);
 				IJV.push_back(trip1);
 				IJV.push_back(trip2);
 				IJV.push_back(trip3);

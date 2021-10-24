@@ -36,7 +36,8 @@ void bounded_biharmonic_weights(
 	
 	Eigen::SparseMatrix<double> Q; // you only need to construct matrix Q to complete the pipeline
 	/* Implement your code here. */
-	
+	Q = L * (Mi * L);
+
 	// Weights must be between 0 and 1. Make arrays of these
 	// to act as constraint arrays for the solver
 	int n = V.rows();
