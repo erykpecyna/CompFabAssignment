@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <set>
 
-unsigned set2ind(std::set<unsigned> s) {
+int set2ind(std::set<int> s) {
 	// This is to match edge indices to their corresponding index in the output of 
 	// edge_lengths or dihedral_angles
 	if (s.find(3) != s.end() && s.find(0) != s.end()) return 0;
@@ -58,35 +58,46 @@ void cotangent_laplacian(
 	igl::edge_lengths(V, F, edgelengths);
 
 	// Volumes
-	Eigen::MatrixXd volumes;
-	volumes.resize(F.rows(), 1);
+	Eigen::VectorXd volumes;
+	volumes.resize(F.rows());
 
 	igl::volume(edgelengths, volumes);
 
+	// Face Areas
+	Eigen::MatrixXd faceareas;
+	faceareas.resize(F.rows(), 4);
+
+	igl::face_areas(V, F, faceareas);
+
+	// Sins
+	Eigen::Matrix<double, Eigen::Dynamic, 6> sins;
+	sins.resize(F.rows(), 6);
+
+	dihedral_sine(volumes, faceareas, edgelengths, sins);
+
 	/* Implement your code here. */
-	for (unsigned tetind = 0; tetind < F.rows(); tetind++) {
+	for (int tetind = 0; tetind < F.rows(); tetind++) {
 		// Loop over edges
-		for (unsigned i = 0; i < 3; i++)
-			for (unsigned j = i + 1; j < 4; j++) {
+		for (int i = 0; i < 3; i++)
+			for (int j = i + 1; j < 4; j++) {
 				// i and j are endpoints of edge in tet space
 				// These edges all exist so this is case 1
-				std::vector<unsigned> currinds({ i, j });
+				std::vector<int> currinds({ i, j });
 
 				// Find opposite edge
 				std::vector<int> opp;
-				for (unsigned k = 0; k < 4; k++) {
+				for (int k = 0; k < 4; k++) {
 					if (std::find(currinds.begin(), currinds.end(), k) == currinds.end()) opp.push_back(k);
 				}
 				
-				assert(opp.size() == 2);
 				// Compute this element of the sum and insert
-				std::set<unsigned> e;
+				std::set<int> e;
 				e.insert(opp[0]);
 				e.insert(opp[1]);
 				unsigned colind = set2ind(e);
 
 				// Compute cotangent
-				double element = (1.f / 6.f) * edgelengths(tetind, colind) * (coses(tetind, colind) / sin(angles(tetind, colind)));
+				double element = (1.f / 6.f) * edgelengths(tetind, colind) * (coses(tetind, colind) / sins(tetind, colind));
 				Eigen::Triplet<double> trip1(F(tetind, i), F(tetind,j), element);
 				Eigen::Triplet<double> trip2(F(tetind, i), F(tetind,i), -element);
 				Eigen::Triplet<double> trip3(F(tetind, j), F(tetind,j), -element);
