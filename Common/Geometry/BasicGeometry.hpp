@@ -35,6 +35,8 @@ namespace geometry {
         Vector3<T> _normal;
     };
 
+    
+
     template <typename T>
     class Triangle {
     public:
@@ -60,6 +62,29 @@ namespace geometry {
         std::vector<Vector3<T>> IntersectPlane(Plane<T> p) {
             std::vector<Vector3<T>> intersections;
             intersections.clear();
+            bool op0, op1, op2;
+            T d0, d1, d2;
+            if (op0 = p.onPlane(vertices(0), d0)) {
+                intersections.push_back(vertices(0));
+            }
+            if (op1 = p.onPlane(vertices(1), d1)) {
+                intersections.push_back(vertices(1));
+            }
+            if (op2 = p.onPlane(vertices(2), d2)) {
+                intersections.push_back(vertices(2));
+            }
+            if (d0 * d1 < 0 && !op0 && !op1) {
+                T t = d0 / (d0 - d1);
+                intersections.push_back(vertices(0) + t * (vertices(1) - vertices(0)));
+            }
+            if (d0 * d2 < 0 && !op0 && !op2) {
+                T t = d0 / (d0 - d2);
+                intersections.push_back(vertices(0) + t * (vertices(2) - vertices(0)));
+            }
+            if (d2 * d1 < 0 && !op2 && !op1) {
+                T t = d2 / (d2 - d1);
+                intersections.push_back(vertices(2) + t * (vertices(1) - vertices(2)));
+            }
             return intersections;
         }
 
@@ -71,6 +96,27 @@ namespace geometry {
         const T IntersectRay(const Vector3<T>& origin, const Vector3<T>& dir) const {
             const T flag = static_cast<T>(-1.0);    
             return flag;
+            
+            const T epsilon = 1e-6;
+            Vector3<T> e1 = _vertices[1] - _vertices[0];
+            Vector3<T> e2 = _vertices[2] - _vertices[0];
+            Vector3<T> h = dir.cross(e2);
+            T a = h.dot(e1);
+            if (a > -epsilon || a < epsilon) return -1; // ray parallel to triangle;
+
+            T f = 1 / a;
+            Vector3<T> s = origin - _vertices[0];
+            T u = f * h.dotproduct(s);
+            
+            if (!(u >= 0 && u <= 1)) return -1;
+
+            Vector3<T> q = s.cross(e1);
+            T v = f * dir.dot(q);
+            if (v < 0 || u + v > 1) return -1;
+
+            // At this point, there is an intersection so find t
+            T t = f * e2.dot(q);
+            return t > epsilon ? t : -1;
         }
 
     private:
