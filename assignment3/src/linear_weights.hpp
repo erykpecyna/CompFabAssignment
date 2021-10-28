@@ -1,5 +1,6 @@
 #include <Eigen/Core>
 #include <limits>
+#include <BasicGeometry.hpp>
 
 // TODO: HW3
 // Assignment 3, Part 2.1. 
@@ -12,5 +13,11 @@ void ComputeLinearSkinningWeights(
 	Eigen::MatrixXd& W) 
 {
 	W.resize(V.rows(), C.rows());
-	/* Implement your code here. */
+	for (unsigned i = 0; i < V.rows(); i++) 
+		for (unsigned j = 0; j < C.rows(); j++) {
+			W(i,j) = 1 / geometry::norm<double>(
+				V(i,0) - C(j,0),
+				V(i,1) - C(j,1),
+				V(i,2) - C(j,2));
+		}
 }
