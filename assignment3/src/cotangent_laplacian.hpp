@@ -97,13 +97,16 @@ void cotangent_laplacian(
 				unsigned colind = set2ind(e);
 
 				// Compute cotangent
-				double element = (1.f / 6.f) * edgelengths(tetind, colind) * (coses(tetind, colind) / sins(tetind, colind));
+				double element = edgelengths(tetind, colind) * (coses(tetind, colind) / sins(tetind, colind)) / 6.f;
 				Eigen::Triplet<double> trip1(F(tetind, i), F(tetind,j), element);
 				Eigen::Triplet<double> trip2(F(tetind, i), F(tetind,i), -element);
 				Eigen::Triplet<double> trip3(F(tetind, j), F(tetind,j), -element);
+				Eigen::Triplet<double> trip4(F(tetind, j), F(tetind,i), element);
+
 				IJV.push_back(trip1);
 				IJV.push_back(trip2);
 				IJV.push_back(trip3);
+				IJV.push_back(trip4);
 			}
 	}
 	// Set From Triplets Sums all Triplets with the same indices
