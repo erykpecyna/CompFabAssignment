@@ -102,8 +102,32 @@ namespace materials {
                 const Material<3, T>& material = this->materials_[this->material_id_[i]].get(); // get the material model
 
                 /* Implement your code here */
+                // Compute F
+                Eigen::Matrix<T, 3, 3> Ds;
+                for (int c = 0; c < 3; c++) {
+                    for (int r = 0; r < 3; r++) {
+                        Ds(r, c) = vertices(r, elements(1 + c)) - vertices(r, elements(0));
+                    }
+                }
+                auto F = Ds * this->Dm_inv[i];
+                std::cout << "F: " << F << std::endl << std::endl;
+
+                // Compute P
+                auto P = material.StressTensor(F);
+                std::cout << "P: " << P << std::endl << std::endl;
                 
+
+                // Compute K (dP/dF)
+                auto Ki = material.StressDifferential(F);
+                std::cout << "Ki: " << Ki << std::endl << std::endl;
+                
+                // Compute dDs/dxik for each element
+                for (int j = 0; j < 4; j++) {
+
+                }
             }
+            std::cout << "vertice count: " << vertices.cols() << "  undeformed count: " << this->undeformed_mesh_.NumOfVertex() << std::endl;
+
             Eigen::SparseMatrix<T> K(vertex_num * 3, vertex_num * 3);
             // contruct sparse matrix K from triplet list, K(i, j) is sum of all value of triplet with row = i and col = j
             K.setFromTriplets(triplet_list.begin(), triplet_list.end());

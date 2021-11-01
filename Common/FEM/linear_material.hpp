@@ -59,10 +59,18 @@ namespace materials {
             const T mu = Material<dim, T>::mu();
             const T lambda = Material<dim, T>::lambda();
             typename Material<dim, T>::MatrixDim2T K;
-            /* Implement your code here */
             
+            /* Implement your code here */
+            Material<dim, T>::MatrixDimT dF;
+            for (int row = 0; row < dim * dim; row++) {
+                dF(row % dim, row / dim) = 1;
+                auto dPdF = this->StressDifferential(F, dF);
+                for (int ind = 0; ind < 9; ind++) {
+                    K(row, ind) = dPdF(ind % 3, ind / 3);
+                }
+                dF(row % dim, row / dim) = 0;
+            }
             return K;
-
         }
 
     private:
