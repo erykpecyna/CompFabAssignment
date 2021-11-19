@@ -92,13 +92,33 @@ class TopologyOptimization {
     //    minimum_density, change_limit, volume_fraction, cell_res, density here
 	  // ...
     // you should replace the following line with your own code
-    for (int i = 0;i < cell_res[0];i++) 
-        for (int j = 0;j < cell_res[1];j++) {
-          new_density[i][j] = density[i][j];
-        }
+    double lambda_lower = 0, lambda_higher = 1e15;
+    while ((1 + 1e-15) * lambda_lower < lambda_higher) {
+        double lambda = (lambda_lower + lambda_higher) / 2;
+        double S = 0.;
+        for (int i = 0;i < cell_res[0];i++) 
+            for (int j = 0;j < cell_res[1];j++) {
+                double v_prime = std::min(
+                    std::min(
+                        std::max(
+                            std::max(
+                                density[i][j] - change_limit,
+                                std::sqrt(s[i][j] / lambda) * density[i][j]),
+                            minimum_density
+                        ),
+                        density[i][j] + change_limit
+                    ), 1.);
+                S += v_prime;
+                new_density[i][j] = v_prime;
+            }
+        if (S < volume_fraction * cell_res[0] * cell_res[1]) lambda_higher = lambda;
+        else lambda_lower = lambda;
+    }
+    
 
     return new_density;
   }
+
 
   Array<real> sensitivity_filtering(const Array<real> &s) const {
     Array<real> s_filtered = s.same_shape();
@@ -110,7 +130,17 @@ class TopologyOptimization {
           // TODO: HW5
           // part 1.2 Sensitivity filtering
           // TODO: replace the follow line with filtering.
-           s_filtered[i][j] = s[i][j];
+           double numerator = 0., denominator = 0.;
+           for (int ii = std::max(0., i - filter_radius); ii < std::min(i + filter_radius, (double)cell_res[0]); ii++) {
+               for (int jj = std::max(0., j - filter_radius); jj < std::min(j + filter_radius, (double)cell_res[1]); jj++) {
+                   double dist = std::sqrt(std::pow((ii - i), 2) + std::pow((jj - j), 2));
+                   numerator += (s[ii][jj] * density[ii][jj] * std::max(0., filter_radius - dist));
+                   denominator += (std::max(0., filter_radius - dist) * density[ii][jj]);
+               }
+           }
+           if (denominator <= 0.)
+               s_filtered[i][j] = 0.;
+           else s_filtered[i][j] = numerator / denominator;
           // NOTE: density and s have size of ``cell_res''.
           //       Be careful not to access the undefined region outside the
           //       range.
