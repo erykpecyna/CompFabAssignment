@@ -45,9 +45,22 @@ class TopologyOptimization {
         break;
       case 2:  // Cantilever Beam (TODO, HW5 part 1.3)
 		// ...
+        // Load
+          f[cell_res[0]][cell_res[1]/2][1] = -1;
+          boundary_condition.push_back({ Vector2i(0,0), 0, 0 });
+          boundary_condition.push_back({ Vector2i(0,0), 1, 0 });
+          boundary_condition.push_back({ Vector2i(0,cell_res[1]), 0, 0});
+          boundary_condition.push_back({ Vector2i(0,cell_res[1]), 1, 0});
         break;
       case 3:  // Bridge (TODO, HW5 part 1.3)
 		// ...
+          //for (int j = 0; j < node_res[0]; j++) f[j][node_res[1]][1] = -1;
+          for (int i = 0; i < cell_res[0]; i++) f[i][cell_res[1]][1] = -1;
+          f[0][cell_res[1]][1] = -1;
+          boundary_condition.push_back({ Vector2i(0,0), 0, 0 });
+          boundary_condition.push_back({ Vector2i(0,0), 1, 0 });
+          boundary_condition.push_back({ Vector2i(cell_res[0],0), 0, 0});
+          boundary_condition.push_back({ Vector2i(cell_res[0],0), 1, 0 });
         break;
     }
   }

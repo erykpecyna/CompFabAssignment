@@ -6,7 +6,7 @@
 #include "tet_deformable_body.hpp"
 #include "typedefs.hpp"
 // include Mesh
-#include "voxelizer.hpp"
+//#include "voxelizer.hpp"
 #include "marching_cube.hpp"
 // include Geometry
 #include "GeometryExploration.hpp"
@@ -37,8 +37,8 @@ void SolvePerformance(std::string stl_name, double& compliance, double& num_voxe
     double density = 1.0;
 
     // step 1: voxelize the mesh
-    mesh::Voxelizer<double> voxelizer(stl_name, dx);
-    voxelizer.AdvancedVoxelization();
+ //   mesh::Voxelizer<double> voxelizer(stl_name, dx);
+    //voxelizer.AdvancedVoxelization();
 
     // step 2: convert the voxelization results to tetrahedral mesh
 
